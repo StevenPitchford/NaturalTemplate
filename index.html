@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+ <meta charset="UTF-8"> 
+<html>
+<head>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script src="./native-template.js"></script>
+	<script src="./controller.js"></script>
+	<title>Test Page</title>
+</head>
+<body>
+	<h1>Hello <span nt-pop="greetee">Placeholder</span></h1>
+	<div class="simple">Some Text</div>
+
+	<hr>
+	<form nt-context="form">
+		<h2>A Form</h2>
+		<div>
+			<select nt-pop="car">
+				<option value="volvo">Volvo</option>
+				<option value="saab">Saab</option>
+				<option value="mercedes">Mercedes</option>
+				<option value="audi">Audi</option>
+			</select> 
+		</div>
+		<div>
+			<input type="text" name="textinput" nt-pop="person">
+		</div>
+	</form>
+
+	<hr>
+	<h2>Some Lists</h2>
+
+	<h3>Single Item</h3>
+	<ol>
+		<li nt-pop="lists.example1">list item</li>
+	</ol>
+
+	<!-- TODO - why isn't this one working -->
+	<h3>Dynamic From Array</h3>
+	<ol nt-pop="lists.example2">
+	</ol>
+	
+	<h3>Dynamic From Array with defauts</h3>
+	<ol nt-pop="lists.example2">
+		<li class="simple">list item</li>
+	</ol>
+
+	<hr>
+	<h2>A Table</h2>
+	
+	
+	</body>
+</html>
