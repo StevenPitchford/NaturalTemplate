@@ -17,6 +17,32 @@ $(document).ready(function() {
 				example1 : "This is an item",
 				example2 : [ "First Item", "Second Item", "Third Item", "Fourth Item", "Fifth Item" ],
 			},
+			bool : {
+				"true"  : 1,
+				"false" : 0
+			},
+			people : [
+				{
+					name: "Sue",
+					age : 32,
+					shoesize : 6
+				},
+				{
+					name: "Helen",
+					age : 27,
+					shoesize : 8
+				},
+				{
+					name: "Dan",
+					age : 14,
+					shoesize : 11
+				},
+				{
+					name: "Frank",
+					age : 55,
+					shoesize : 9
+				},
+			]
 	};
 
 	$("*").nativeTemplate({data: model });

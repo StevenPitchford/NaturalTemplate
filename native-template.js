@@ -7,40 +7,7 @@
         // Establish our default settings
         var settings = $.extend({
             data    : { greetee : "world" }
-        }, options);	
-
-		var listHandler = function( context,data )
-		{
-			if (data && data.constructor === Array)
-			{
-				var child = $(context).children("li:first");
-				if ( child )
-				{
-					var template = child.clone();
-					child.remove();
-
-					data.forEach(function(element){
-						var newItem = template.clone();
-						newItem.text( element );
-						newItem.appendTo($(context));
-					});
-				}
-				else{
-					// add items to list
-					data.forEach(function(element){
-						var item = $("<li>"+element+"</li>");
-						item.appendTo($(context));
-					});
-				}
-			}
-			else // bit of an odd case but seems least ungreatful way of dealing with this...
-			{
-				// TODO - clone removed item
-				console.log("Item");
-				$(context).filter('li').remove();
-				$(context).append("<li>"+data+"</li>");
-			} 
-		};
+        }, options);
 
 		var tagSupport = {
 			SPAN : function( context,data ){
@@ -49,8 +16,12 @@
 			LI : function( context,data ){
 				$(context).text(data);
 			},
-			OL : listHandler,
-			UL : listHandler,
+			TH : function( context,data ){
+				$(context).text(data);
+			},
+			TD : function( context,data ){
+				$(context).text(data);
+			},
 			SELECT : function( context,data ){
 //				$(context).filter("option:selected").prop("selected",false);
 //				$(context).filter('option[value="'+data+'"]').prop('selected', true);
@@ -64,53 +35,185 @@
 			},
 		};
 
-		var dataFromParam = function( param, data )
+		var dataFromParam = function( attribute, local, data )
 		{
 
-			if ( param.length == 0 )
+			try{
+				return dataLookup(attribute,local);
+			}
+			catch (err){};
+			
+			return dataLookup(attribute,data);
+
+		}
+
+		var dataLookup = function( attribute, data )
+		{		
+			var param = attribute.split(".");
+
+			if ( param.length == 0 || ! data )
 			{
 				throw("No Match");
 			};
 
 			var ptr = data;
-			for( var i = 0; i < param.length; i++)
+			loop: for( var i = 0; i < param.length; i++)
 			{
-				ptr = ptr[param[i]];
+
+				if ( param[i] in ptr )
+				{
+					ptr = ptr[param[i]];
+					continue loop;
+				}
+
+				throw("No Match");
+				return;					
 			};
-			
+
 			return ptr;
 		}
 
-        return this.each( function() {
-            // We'll get back to this in a moment
+		var processIf = function( context,attribute,local,data )
+		{
+			try
+			{
+				var val = dataFromParam(attribute,local,data);
+				if ( ! val )
+				{
+					context.remove();
+				};
+			}
+			catch(err)
+			{
+				console.log(err);
+				console.log("Cannot find var for element "+context.tagName+" in nt-if: "+attribute); // todo add silent / noisy option
+				$(this).removeAttr("nt-if");
+			}
+		};
 
-			var a = $(this).attr("nt-pop");
+		var eachHeap = [];
+
+		var buildLocal = function(){
+			var local = {};
+			eachHeap.forEach(function (element){
+				local[element.name] = element.scope;					
+			});
+			return local;
+		}
+
+		var processEach = function( context,attribute,local,data )
+		{
+
+			$(context).removeAttr("nt-each");
+			var list = attribute.split(/\s+/);
+
+			if ( list.length != 3 || list[1] !== 'IN' )
+			{
+				console.log("Illegal Expression in "+context.tagName+" in nt-each: '"+attribute+"'"); // todo add silent / noisy option
+			}
+
+			var localName = list[0];
+			var param = list[2];
+			var val;
+
+			try
+			{
+				val = dataFromParam(param,local,data);
+//				console.log(param);				
+//				console.log(val);				
+//				console.log(JSON.stringify(local));
+//				console.log(JSON.stringify(data));
+				
+			}
+			catch(err)
+			{
+				console.log(err);
+				console.log("Cannot find var for element "+context.tagName+" in nt-each: "+attribute); // todo add silent / noisy option
+				return;
+			}
+
+			// val HAS to be Array
+			if ( ! $.isArray( val ))
+			{
+				console.log("Val not list for element "+context.tagName+" in nt-each: "+attribute); // todo add silent / noisy option
+				return;				
+			}
+
+			var template = $(context).clone();
+			var parent = $(context).parent();
+			$(context).remove();
+
+			val.forEach(function(el)
+			{
+				// TODO - avoid rebuiding heap every time?
+				var t = { name : localName, scope : el };
+
+				eachHeap.push(t);
+				var l = buildLocal();
+
+				var newItem = template.clone();
+				newItem.removeAttr("nt-each");
+				newItem.removeAttr("id");
+//				newItem.data("ntLocalScope",local);
+				processElement( newItem,l,data );
+				newItem.appendTo($(parent));
+
+				eachHeap.pop();
+			});
+		};
+
+		var processPop = function( context,attribute,local,data )
+		{
+
+			var fn = tagSupport[ context.tagName ] ;
+			if ( jQuery.isFunction( fn ) )
+			{
+				// execute function
+				var val;
+				try
+				{
+					val = dataFromParam(attribute,local,data);
+					fn(context,val);	// TODO - context
+				}
+				catch(err)
+				{
+					console.log(err);
+					console.log("Cannot find var for element "+context.tagName+" in nt-pop: "+attribute); // todo add silent / noisy option
+				}
+
+			}
+			else
+			{
+				console.log("Attempt to populate unsupported html element: "+context.tagName);
+			}
+
+			$(this).removeAttr("nt-pop");
+
+		};
+
+		var processElement = function( element,local,data )
+		{
+			var a = $(element).attr("nt-if");
 			if ( a )
 			{
-				var fn = tagSupport[ this.tagName ] ;
-				if ( jQuery.isFunction( fn ) )
-				{
-					// execute function
-					var l = a.split(".");
-
-					var val = '';
-					try
-					{
-						val = dataFromParam(l,settings.data);
-					}
-					catch(err)
-					{
-						console.log(err);
-						console.log("Cannot find var for element "+this.tagName+" in nt-pop: "+a); // todo add silent / noisy option
-					}
-					
-					fn(this,val);	// TODO - context
-				}
-				else
-				{
-					console.log("Attempt to populate unsupported html element: "+this.tagName);
-				}
+				processIf( element,a,local,data );
 			}
+
+			var b = $(element).attr("nt-each");
+			if ( b )
+			{
+				processEach( element,b,local,data );
+			}
+
+			var c = $(element).attr("nt-pop");
+			if ( c )
+			{
+				processPop( element,c,local,data );
+			}
+		};
+
+        return this.each( function() {
+			processElement(this,{},settings.data);
         });
     }
 

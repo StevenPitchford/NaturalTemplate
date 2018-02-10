@@ -26,6 +26,12 @@
 			<input type="text" name="textinput" nt-pop="person">
 		</div>
 	</form>
+	<hr>
+
+	<h2>Two blocks</h2>
+
+	<div nt-if="bool.true">This is shown if TRUE is true</div>
+	<div nt-if="bool.false">This is shown if FALSE is true</div>
 
 	<hr>
 	<h2>Some Lists</h2>
@@ -34,20 +40,19 @@
 	<ol>
 		<li nt-pop="lists.example1">list item</li>
 	</ol>
-
-	<!-- TODO - why isn't this one working -->
-	<h3>Dynamic From Array</h3>
-	<ol nt-pop="lists.example2">
-	</ol>
 	
 	<h3>Dynamic From Array with defauts</h3>
-	<ol nt-pop="lists.example2">
-		<li class="simple">list item</li>
+	<ol>
+		<li class="simple" nt-each="item IN lists.example2" nt-pop="item">list item</li>
 	</ol>
 
 	<hr>
 	<h2>A Table</h2>
-	
-	
+
+	<table style="border: 1px solid black;">
+		<tr><th>Name</th><th>Age</th><th>Shoe Size</th></tr>
+		<tr nt-each="person IN people"><td nt-pop="person.name">Bob</td><td nt-pop="person.age">32</td><td nt-pop="person.shoesize">8</td></tr>
+	</table>
+
 	</body>
 </html>
